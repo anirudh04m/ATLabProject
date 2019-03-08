@@ -1,15 +1,19 @@
 package com.anirudh.user.getfit;
 
   import android.content.Context;
-import android.hardware.Sensor;
+  import android.content.DialogInterface;
+  import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+  import android.support.annotation.NonNull;
+  import android.support.design.widget.NavigationView;
   import android.support.v4.view.GravityCompat;
-  import android.support.v7.app.AppCompatCallback;
-import android.support.v7.app.AppCompatDelegate;
-import android.view.View;
+//import android.support.v7.app.AppCompatCallback;
+//import android.support.v7.app.AppCompatDelegate;
+  import android.support.v7.app.AlertDialog;
+  import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,24 +30,61 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
      float cvalue = 0;
      Button reset ;
      private DrawerLayout drawerLayout;
+     NavigationView navigationView;
+     AlertDialog alertDialog;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // nav drawer code
         drawerLayout = (DrawerLayout) findViewById(R.id.drawerlayout_id);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
         ActionBar actionbar = getSupportActionBar();
         actionbar.setDisplayHomeAsUpEnabled(true);
         actionbar.setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
+        alertDialog = new AlertDialog.Builder (MainActivity.this).create();
+        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+                int id = menuItem.getItemId();
+                switch (id)
+                {
+                    case R.id.nav_item_about:
+                        alertDialog.setTitle("About");
+                        alertDialog.setMessage("Get Fit is a simple pedometer app. The app is completely open-source");
+                        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                                new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.dismiss();
+                                    }
+                                });
+                        alertDialog.show();
+                        break;
+                    case R.id.nav_item_history:
+                        Toast.makeText (getApplicationContext(),"History",Toast.LENGTH_SHORT).show();
+                        break;
+                    case R.id.nav_item_settings:
+                        Toast.makeText (getApplicationContext(),"Settings",Toast.LENGTH_SHORT).show();
+                        break;
+                    default:
+                        return true;
+
+                }
+                return true;
+            }
+        });
+
+        // sensor buttons and UI controls
         count = (TextView) findViewById(R.id.count);
-
         sensor = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-
         reset = (Button) findViewById(R.id.reset);
 
+        // reset button
         reset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -56,6 +97,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
     }
+
+    // toolbar toggles nav bar
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
