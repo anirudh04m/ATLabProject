@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                         dialog.dismiss();
                                     }
                                 });
-                        alertDialog.setIcon (android.R.drawable.ic_dialog_alert);
+                        alertDialog.setIcon (R.mipmap.ic_launcher);;
                         alertDialog.show();
                         break;
                     case R.id.nav_item_history:
@@ -153,7 +153,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 
                 builder.setTitle("Confirm Exit");
-                builder.setIcon (R.mipmap.ic_launcher);
+                builder.setIcon (android.R.drawable.ic_dialog_alert);
                 builder.setMessage ("Are you sure you want to exit?");
                 builder.setCancelable(false);
                 builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
