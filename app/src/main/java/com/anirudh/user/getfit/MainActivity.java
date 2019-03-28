@@ -22,6 +22,7 @@ import android.view.MenuItem;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v4.widget.DrawerLayout;
 import com.anirudh.user.getfit.ExitDialogFragment;
+import com.anirudh.user.getfit.AboutDialogFragment;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
 
@@ -32,14 +33,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
      private Button reset ;
      private DrawerLayout drawerLayout;
      private NavigationView navigationView;
-     private AlertDialog alertDialog;
+     private ExitDialogFragment exitDialogFragment;
+     private AboutDialogFragment aboutDialogFragment;
 
     @Override
      protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        alertDialog = new AlertDialog.Builder (MainActivity.this).create();
+
         // nav drawer code
         // first we add a toolbar
         drawerLayout = (DrawerLayout) findViewById(R.id.drawerlayout_id);
@@ -49,7 +51,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         ActionBar actionbar = getSupportActionBar();
         actionbar.setDisplayHomeAsUpEnabled(true);
         actionbar.setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
-
+        exitDialogFragment = ExitDialogFragment.newInstance("Confirm");
+        aboutDialogFragment = AboutDialogFragment.newInstance("About");
         // menu item listener in navigation drawer
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -60,18 +63,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 switch (id)
                 {
                     case R.id.nav_item_about:
-
-                        alertDialog.setTitle("About");
-                        alertDialog.setMessage("Get Fit is a simple pedometer app. The app is completely open-source");
-                        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
-                                new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        dialog.dismiss();
-                                    }
-                                });
-                        alertDialog.setIcon (R.mipmap.ic_launcher);;
-                        alertDialog.show();
+                        showAboutDialog();
                         menuItem.setChecked(false);
                         break;
                     case R.id.nav_item_history:
@@ -150,10 +142,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
+    public void showAboutDialog () {
+        //AboutDialogFragment aboutDialogFragment = AboutDialogFragment.newInstance ("About");
+        aboutDialogFragment.show (getSupportFragmentManager(),"title");
+    }
     public void showExitDialog ()
     {
         FragmentManager fm = getSupportFragmentManager();
-        ExitDialogFragment exitDialogFragment = ExitDialogFragment.newInstance ("Confirm");
+        //ExitDialogFragment exitDialogFragment = ExitDialogFragment.newInstance ("Confirm");
         exitDialogFragment.show (fm,"title");
     }
     @Override

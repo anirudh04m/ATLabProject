@@ -6,4 +6,6 @@
     <string name="exit_dialog">Are you sure you want to exit?</string>
     <string name="yes_str">Yes</string>
     <string name="no_str">No</string>
+    <string name="about_str">Get Fit is a simple feature-rich pedometer app. The
+    app is fully open-source</string>
 </resources>

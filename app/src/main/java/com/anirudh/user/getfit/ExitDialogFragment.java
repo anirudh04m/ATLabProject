@@ -25,13 +25,13 @@ public class ExitDialogFragment extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder (getActivity());
         builder.setTitle(title);
         builder.setMessage (R.string.exit_dialog);
-        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(R.string.yes_str, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 ((MainActivity) getActivity()).finish();
             }
         });
-        builder.setNegativeButton("no", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton(R.string.no_str, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
