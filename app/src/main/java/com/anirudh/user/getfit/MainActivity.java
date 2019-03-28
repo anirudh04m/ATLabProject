@@ -9,9 +9,8 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GravityCompat;
-//import android.support.v7.app.AppCompatCallback;
-//import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
 import android.widget.Button;
@@ -22,7 +21,7 @@ import android.support.v7.app.ActionBar;
 import android.view.MenuItem;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v4.widget.DrawerLayout;
-import android.database.sqlite.*;
+import com.anirudh.user.getfit.ExitDialogFragment;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
 
@@ -33,7 +32,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
      private Button reset ;
      private DrawerLayout drawerLayout;
      private NavigationView navigationView;
-    private AlertDialog alertDialog;
+     private AlertDialog alertDialog;
 
     @Override
      protected void onCreate(Bundle savedInstanceState) {
@@ -73,17 +72,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                 });
                         alertDialog.setIcon (R.mipmap.ic_launcher);;
                         alertDialog.show();
+                        menuItem.setChecked(false);
                         break;
                     case R.id.nav_item_history:
                         Toast.makeText (getApplicationContext(),"History",Toast.LENGTH_SHORT).show();
+                        menuItem.setChecked(false);
                         break;
                     case R.id.nav_item_settings:
                         Toast.makeText (getApplicationContext(),"Settings",Toast.LENGTH_SHORT).show();
+                        menuItem.setChecked(false);
                         break;
                     default:
                         return true;
 
                 }
+                menuItem.setChecked(false);
                 return true;
             }
         });
@@ -147,29 +150,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
+    public void showExitDialog ()
+    {
+        FragmentManager fm = getSupportFragmentManager();
+        ExitDialogFragment exitDialogFragment = ExitDialogFragment.newInstance ("Confirm");
+        exitDialogFragment.show (fm,"title");
+    }
     @Override
     public void onBackPressed()
     {
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-
-                builder.setTitle("Confirm Exit");
-                builder.setIcon (android.R.drawable.ic_dialog_alert);
-                builder.setMessage ("Are you sure you want to exit?");
-                builder.setCancelable(false);
-                builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        finish();
-                    }
-                });
-                builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                    }
-                });
-        AlertDialog adialog = builder.create();
-        adialog.show();
+        showExitDialog ();
     }
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {

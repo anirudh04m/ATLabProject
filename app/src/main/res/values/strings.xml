@@ -3,4 +3,7 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="exit_dialog">Are you sure you want to exit?</string>
+    <string name="yes_str">Yes</string>
+    <string name="no_str">No</string>
 </resources>
