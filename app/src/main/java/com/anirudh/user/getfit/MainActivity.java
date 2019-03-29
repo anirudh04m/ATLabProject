@@ -2,6 +2,8 @@ package com.anirudh.user.getfit;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -12,6 +14,7 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v7.app.AlertDialog;
+import android.text.format.DateUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -24,8 +27,13 @@ import android.support.v4.widget.DrawerLayout;
 import com.anirudh.user.getfit.ExitDialogFragment;
 import com.anirudh.user.getfit.AboutDialogFragment;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener{
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
+public class MainActivity extends AppCompatActivity implements SensorEventListener{
+    public static final String DATABASE_NAME = "getfitdb.db";
      private TextView count ;
      private boolean running = false  ;
      private SensorManager sensor ;
@@ -35,9 +43,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
      private NavigationView navigationView;
      private ExitDialogFragment exitDialogFragment;
      private AboutDialogFragment aboutDialogFragment;
+     SQLiteDatabase mDatabase;
+     Boolean newDay = true;
 
+    public Boolean checkNewDay () {
+        Cursor cursorTimeStamp = mDatabase.rawQuery ("SELECT * FROM timestamprecord",null);
+        if (! cursorTimeStamp.moveToFirst() )
+            return true;
+        else
+        {
+            long timestampnew = cursorTimeStamp.getLong(1);
+            if (DateUtils.isToday (timestampnew))
+                return false;
+            else
+                return true;
+        }
+    }
     @Override
-     protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -53,6 +76,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         actionbar.setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
         exitDialogFragment = ExitDialogFragment.newInstance("Confirm");
         aboutDialogFragment = AboutDialogFragment.newInstance("About");
+        mDatabase = openOrCreateDatabase(DATABASE_NAME,MODE_PRIVATE,null);
+        createDatabase();
+
+        newDay = checkNewDay ();
+
         // menu item listener in navigation drawer
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -138,6 +166,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (running){
+            long boottimestamp = java.lang.System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime();
+            long timemills = boottimestamp + (event.timestamp/1000000l);
+            mDatabase.execSQL("DELETE from timestamprecord");
+            mDatabase.execSQL ("INSERT INTO timestamprecord VALUES ("+timemills+","+event.values[0]+");");
+
+            Date date = new Date (timemills);
+            DateFormat formatter = new SimpleDateFormat("HH:mm:ss.SSSS");
+            formatter.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
+
+            String df = formatter.format (date);
+
+            System.out.println ("Update records:"+df+" "+event.values[0]);
             count.setText(String.valueOf(event.values[0] - cvalue));
         }
     }
@@ -151,6 +191,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         FragmentManager fm = getSupportFragmentManager();
         //ExitDialogFragment exitDialogFragment = ExitDialogFragment.newInstance ("Confirm");
         exitDialogFragment.show (fm,"title");
+    }
+
+    public void createDatabase ()
+    {
+        mDatabase.execSQL (
+                "CREATE TABLE IF NOT EXISTS timestamprecord (\n" +
+                        " timestamp int NOT NULL,\n"+
+                        " stepcount int NOT NULL\n"+
+                        ")");
     }
     @Override
     public void onBackPressed()
