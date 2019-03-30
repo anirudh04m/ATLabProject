@@ -18,9 +18,9 @@
             android:layout_width="match_parent"
             android:layout_height="?android:attr/actionBarSize"
             android:background="@color/colorPrimary"
-
             app:layout_constraintTop_toTopOf="parent"
-            app:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            app:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            app:titleTextColor="#000000"/>
 
         <ProgressBar
             android:id="@+id/progressBar"
@@ -52,6 +52,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="8dp"
+            android:textSize="30dp"
             android:text="TextView"
             app:layout_constraintBottom_toTopOf="@+id/progressBar"
             app:layout_constraintEnd_toEndOf="parent"
@@ -68,5 +69,6 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
+        app:theme="@style/Theme.AppCompat.Light.NoActionBar"
         app:menu="@menu/drawer_view" />
 </android.support.v4.widget.DrawerLayout>

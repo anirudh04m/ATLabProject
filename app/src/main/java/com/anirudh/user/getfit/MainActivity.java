@@ -215,7 +215,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             //String df = formatter.format (date);
             countvalue = event.values[0];
-            String op = String.valueOf(event.values[0]) + "/" + String.valueOf(target);
+            String op = String.valueOf((int)event.values[0]) + "/" + String.valueOf((int)target);
             count_tv.setText(op);
         }
     }
