@@ -1,14 +1,19 @@
 package com.anirudh.user.getfit;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.DrawableWrapper;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
@@ -17,6 +22,7 @@ import android.support.v7.app.AlertDialog;
 import android.text.format.DateUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.support.v7.widget.Toolbar;
@@ -34,18 +40,20 @@ import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
     public static final String DATABASE_NAME = "getfitdb.db";
-     private TextView count ;
+     private TextView count_tv ;
      private boolean running = false  ;
+     private ProgressBar progressBar;
      private SensorManager sensor ;
      private float cvalue = 0;
-     private Button reset ;
+     private float countvalue = 0,oldvalue = 0;
+     public float target = 1000;
      private DrawerLayout drawerLayout;
      private NavigationView navigationView;
      private ExitDialogFragment exitDialogFragment;
      private AboutDialogFragment aboutDialogFragment;
      SQLiteDatabase mDatabase;
      Boolean newDay = true;
-
+     private Handler handler = new Handler();
     public Boolean checkNewDay () {
         Cursor cursorTimeStamp = mDatabase.rawQuery ("SELECT * FROM timestamprecord",null);
         if (! cursorTimeStamp.moveToFirst() )
@@ -64,6 +72,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Resources res = getResources();
+        Drawable drawable = res.getDrawable(R.drawable.custom_progressbar_drawable);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        progressBar.setIndeterminate(false);
+        progressBar.setProgress(0);
+        progressBar.setSecondaryProgress(100);
+        progressBar.setMax (100);
+        progressBar.setProgressDrawable(drawable);
 
         // nav drawer code
         // first we add a toolbar
@@ -74,8 +90,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         ActionBar actionbar = getSupportActionBar();
         actionbar.setDisplayHomeAsUpEnabled(true);
         actionbar.setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
+
+        // dialog box stuff
         exitDialogFragment = ExitDialogFragment.newInstance("Confirm");
         aboutDialogFragment = AboutDialogFragment.newInstance("About");
+
+        // sql stuff
         mDatabase = openOrCreateDatabase(DATABASE_NAME,MODE_PRIVATE,null);
         createDatabase();
 
@@ -112,21 +132,38 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         });
 
         // sensor buttons and UI controls
-        count = (TextView) findViewById(R.id.count);
+        count_tv = (TextView) findViewById(R.id.count);
         sensor = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        reset = (Button) findViewById(R.id.reset);
 
-        // reset button listener
-        reset.setOnClickListener(new View.OnClickListener() {
+        new Thread(new Runnable() {
             @Override
-            public void onClick(View v) {
-                //  (this is for disabling the sensor entirely)
-                //sensor.unregisterListener(MainActivity.this);
-                cvalue = Float.parseFloat(count.getText().toString());
-                count.setText ("0");
-                }
+            public void run (){
+                System.out.println ("Inside new thread");
+                while (countvalue <= target) {
+                    if ( countvalue != oldvalue ) {
+                    handler.post (new Runnable() {
+                        @Override
+                        public void run() {
+                            if ( progressBar.getProgress() == 50 )
+                                progressBar.setProgress (0);
+                            else
+                                progressBar.setProgress (50);
+                            progressBar.setProgress((int)((countvalue/target)*100));
+                            System.out.println ("Updating progress from "+oldvalue+" to "+progressBar.getProgress());
+                            oldvalue = countvalue;
+
+                        }
+                    });
+                    try {
+                        Thread.sleep(100);
+
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }}
             }
-        );
+        }).start();
 
 
     }
@@ -166,19 +203,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (running){
+            oldvalue = countvalue;
             long boottimestamp = java.lang.System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime();
             long timemills = boottimestamp + (event.timestamp/1000000l);
             mDatabase.execSQL("DELETE from timestamprecord");
-            mDatabase.execSQL ("INSERT INTO timestamprecord VALUES ("+timemills+","+event.values[0]+");");
+            //mDatabase.execSQL ("INSERT INTO timestamprecord VALUES ("+timemills+","+event.values[0]+");");
 
-            Date date = new Date (timemills);
-            DateFormat formatter = new SimpleDateFormat("HH:mm:ss.SSSS");
-            formatter.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
+            //Date date = new Date (timemills);
+            //DateFormat formatter = new SimpleDateFormat("HH:mm:ss.SSSS");
+            //formatter.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
 
-            String df = formatter.format (date);
-
-            System.out.println ("Update records:"+df+" "+event.values[0]);
-            count.setText(String.valueOf(event.values[0] - cvalue));
+            //String df = formatter.format (date);
+            countvalue = event.values[0];
+            String op = String.valueOf(event.values[0]) + "/" + String.valueOf(target);
+            count_tv.setText(op);
         }
     }
 
