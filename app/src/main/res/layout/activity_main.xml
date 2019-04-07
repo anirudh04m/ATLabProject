@@ -70,5 +70,6 @@
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
         app:theme="@style/Theme.AppCompat.Light.NoActionBar"
-        app:menu="@menu/drawer_view" />
+        app:menu="@menu/drawer_view">
+    </android.support.design.widget.NavigationView>>
 </android.support.v4.widget.DrawerLayout>

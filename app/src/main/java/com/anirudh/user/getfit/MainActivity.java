@@ -3,6 +3,7 @@ package com.anirudh.user.getfit;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -40,12 +41,13 @@ import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
     public static final String DATABASE_NAME = "getfitdb.db";
+    public static final String PREFS_NAME = "MyPrefsFile";
      private TextView count_tv ;
      private boolean running = false  ;
      private ProgressBar progressBar;
      private SensorManager sensor ;
-     private float cvalue = 0;
      private float countvalue = 0,oldvalue = 0;
+     private float dbvalue = 0;
      public float target = 1000;
      private DrawerLayout drawerLayout;
      private NavigationView navigationView;
@@ -54,23 +56,34 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
      SQLiteDatabase mDatabase;
      Boolean newDay = true;
      private Handler handler = new Handler();
-    public Boolean checkNewDay () {
+     private boolean firstRun;
+
+     public Boolean checkNewDay () {
         Cursor cursorTimeStamp = mDatabase.rawQuery ("SELECT * FROM timestamprecord",null);
         if (! cursorTimeStamp.moveToFirst() )
+        {
+            cursorTimeStamp.close();
             return true;
+        }
+
         else
         {
-            long timestampnew = cursorTimeStamp.getLong(1);
+            long timestampnew = cursorTimeStamp.getLong(0);
+            cursorTimeStamp.close();
             if (DateUtils.isToday (timestampnew))
                 return false;
             else
                 return true;
         }
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME,0);
+        firstRun = settings.getBoolean("firstRun",true);
+
 
         Resources res = getResources();
         Drawable drawable = res.getDrawable(R.drawable.custom_progressbar_drawable);
@@ -97,9 +110,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // sql stuff
         mDatabase = openOrCreateDatabase(DATABASE_NAME,MODE_PRIVATE,null);
-        createDatabase();
 
-        newDay = checkNewDay ();
+
 
         // menu item listener in navigation drawer
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
@@ -135,10 +147,37 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         count_tv = (TextView) findViewById(R.id.count);
         sensor = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
+
+
+        if ( firstRun )
+        {
+            createDatabase();
+            System.out.println("Virgin");
+            settings.edit().putBoolean("firstRun",false).commit();
+        }
+
+        if ( checkNewDay())
+        {
+            System.out.println("New day");
+            dbvalue = 0;
+        }
+        else
+        {
+            Cursor cursor = mDatabase.rawQuery("SELECT * FROM lastrecord",null);
+            if ( cursor.moveToNext() ) {
+                dbvalue = cursor.getFloat(0);
+            }
+            else
+            {
+                System.out.println ("Nahi mila re");
+            }
+            cursor.close();
+        }
+
         new Thread(new Runnable() {
             @Override
             public void run (){
-                System.out.println ("Inside new thread");
+
                 while (countvalue <= target) {
                     if ( countvalue != oldvalue ) {
                     handler.post (new Runnable() {
@@ -149,7 +188,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             else
                                 progressBar.setProgress (50);
                             progressBar.setProgress((int)((countvalue/target)*100));
-                            System.out.println ("Updating progress from "+oldvalue+" to "+progressBar.getProgress());
                             oldvalue = countvalue;
 
                         }
@@ -191,6 +229,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         } else {
             Toast.makeText(this,"Sensor Not Found!" , Toast.LENGTH_SHORT).show();
         }
+
+
     }
 
     @Override
@@ -204,18 +244,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onSensorChanged(SensorEvent event) {
         if (running){
             oldvalue = countvalue;
+            if (dbvalue == 0)
+            {
+                //oldvalue = 0;
+                dbvalue = event.values[0];
+
+            }
+            System.out.println("dbvalue="+dbvalue);
             long boottimestamp = java.lang.System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime();
             long timemills = boottimestamp + (event.timestamp/1000000l);
             mDatabase.execSQL("DELETE from timestamprecord");
-            //mDatabase.execSQL ("INSERT INTO timestamprecord VALUES ("+timemills+","+event.values[0]+");");
-
-            //Date date = new Date (timemills);
-            //DateFormat formatter = new SimpleDateFormat("HH:mm:ss.SSSS");
-            //formatter.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
-
-            //String df = formatter.format (date);
-            countvalue = event.values[0];
-            String op = String.valueOf((int)event.values[0]) + "/" + String.valueOf((int)target);
+            countvalue = event.values[0] - dbvalue;
+            mDatabase.execSQL ("INSERT INTO timestamprecord VALUES ("+timemills+","+countvalue+");");
+            String op = String.valueOf((int)countvalue) + "/" + String.valueOf((int)target);
             count_tv.setText(op);
         }
     }
@@ -238,10 +279,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         " timestamp int NOT NULL,\n"+
                         " stepcount int NOT NULL\n"+
                         ")");
+        mDatabase.execSQL (
+                "CREATE TABLE IF NOT EXISTS lastrecord (\n"+
+                        " timestamp int NOT NULL);");
+
+
     }
     @Override
     public void onBackPressed()
     {
+        mDatabase.execSQL("DELETE FROM lastrecord;") ;
+        mDatabase.execSQL("INSERT INTO lastrecord values ("+(int)dbvalue+");");
+        System.out.println ("Saving last value");
         showExitDialog ();
     }
     @Override
