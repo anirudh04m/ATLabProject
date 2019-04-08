@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+         setTheme (R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         SharedPreferences settings = getSharedPreferences(PREFS_NAME,0);
@@ -153,6 +154,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         {
             createDatabase();
             System.out.println("Virgin");
+
             settings.edit().putBoolean("firstRun",false).commit();
         }
 
@@ -282,6 +284,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mDatabase.execSQL (
                 "CREATE TABLE IF NOT EXISTS lastrecord (\n"+
                         " timestamp int NOT NULL);");
+        mDatabase.execSQL (
+                "CREATE TABLE IF NOT EXISTS targetrecords (\n"+
+                        " target int NOT NULL);");
+
 
 
     }
