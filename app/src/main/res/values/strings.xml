@@ -8,4 +8,5 @@
     <string name="no_str">No</string>
     <string name="about_str">Get Fit is a simple feature-rich pedometer app. The
     app is fully open-source</string>
+    <string name="welcome_msg">Welcome to Get Fit. Get Fit is a fitness tracker app which monitors your steps count with loads of other features.</string>
 </resources>

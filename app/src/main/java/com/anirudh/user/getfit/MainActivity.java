@@ -1,6 +1,7 @@
 package com.anirudh.user.getfit;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -23,6 +24,7 @@ import android.support.v7.app.AlertDialog;
 import android.text.format.DateUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.NumberPicker;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -48,11 +50,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
      private SensorManager sensor ;
      private float countvalue = 0,oldvalue = 0;
      private float dbvalue = 0;
-     public float target = 1000;
+     public float target;
      private DrawerLayout drawerLayout;
      private NavigationView navigationView;
      private ExitDialogFragment exitDialogFragment;
      private AboutDialogFragment aboutDialogFragment;
+     private IntroDialogFragment introDialogFragment;
      SQLiteDatabase mDatabase;
      Boolean newDay = true;
      private Handler handler = new Handler();
@@ -76,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 return true;
         }
     }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -154,14 +158,47 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         {
             createDatabase();
             System.out.println("Virgin");
+            introDialogFragment = IntroDialogFragment.getInstance("Welcome");
+            showIntroDialog();
+            final NumberPicker numberPicker= new NumberPicker(this);
+            numberPicker.setMinValue(1);
+            numberPicker.setWrapSelectorWheel(true);
+            numberPicker.setMaxValue(10000);
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle ("Set daily target");
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    target = numberPicker.getValue();
+                    mDatabase.execSQL("DELETE FROM targetrecords");
+                    mDatabase.execSQL("INSERT INTO targetrecords VALUES("+target+")");
+                    count_tv.setText("0/"+String.valueOf((int)target));
+                }
+            });
+            builder.setView(numberPicker);
+            builder.show();
+
 
             settings.edit().putBoolean("firstRun",false).commit();
+
+
+        }
+        else
+        {
+            Cursor c = mDatabase.rawQuery("SELECT * FROM targetrecords",null);
+            if ( c.moveToNext())
+            {
+                target = c.getInt(0);
+            }
         }
 
         if ( checkNewDay())
         {
             System.out.println("New day");
             dbvalue = 0;
+            countvalue = 0;
+            count_tv.setText(String.valueOf((int)countvalue)+"/"+String.valueOf((int)target));
+
         }
         else
         {
@@ -173,8 +210,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             {
                 System.out.println ("Nahi mila re");
             }
+            countvalue = dbvalue;
+            count_tv.setText(String.valueOf((int)countvalue)+"/"+String.valueOf((int)target));
             cursor.close();
         }
+
+
 
         new Thread(new Runnable() {
             @Override
@@ -225,7 +266,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onResume() {
         super.onResume();
         running = true;
-        Sensor Count = sensor.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+        //Sensor Count = sensor.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+        Sensor Count = sensor.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
         if (Count!= null) {
             sensor.registerListener(this,Count,SensorManager.SENSOR_DELAY_UI);
         } else {
@@ -244,23 +286,53 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (running){
-            oldvalue = countvalue;
-            if (dbvalue == 0)
-            {
-                //oldvalue = 0;
-                dbvalue = event.values[0];
+         /*if ( event.sensor.getType() == Sensor.TYPE_STEP_COUNTER) {
+             if (running) {
+                 oldvalue = countvalue;
+                 if (dbvalue == 0) {
+                     //oldvalue = 0;
+                     dbvalue = event.values[0];
 
-            }
-            System.out.println("dbvalue="+dbvalue);
-            long boottimestamp = java.lang.System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime();
-            long timemills = boottimestamp + (event.timestamp/1000000l);
-            mDatabase.execSQL("DELETE from timestamprecord");
-            countvalue = event.values[0] - dbvalue;
-            mDatabase.execSQL ("INSERT INTO timestamprecord VALUES ("+timemills+","+countvalue+");");
-            String op = String.valueOf((int)countvalue) + "/" + String.valueOf((int)target);
-            count_tv.setText(op);
-        }
+                 }
+                 //mDatabase.execSQL("DELETE FROM targetrecords");
+                 //mDatabase.execSQL("INSERT INTO targetrecords values ("+target+");");
+                 System.out.println("dbvalue=" + dbvalue);
+                 long boottimestamp = java.lang.System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime();
+                 long timemills = boottimestamp + (event.timestamp / 1000000l);
+                 mDatabase.execSQL("DELETE from timestamprecord");
+                 countvalue = event.values[0] - dbvalue;
+                 mDatabase.execSQL("INSERT INTO timestamprecord VALUES (" + timemills + "," + countvalue + ");");
+                 String op = String.valueOf((int) countvalue) + "/" + String.valueOf((int) target);
+                 count_tv.setText(op);
+             }
+         }*/
+         if ( event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR && event.accuracy == SensorManager.SENSOR_STATUS_ACCURACY_HIGH) {
+             if ( running )
+             {
+                 if ( dbvalue == 0 )
+                 {
+                     countvalue = 0;
+                     dbvalue = 1;
+                 }
+                 else
+                 {
+                     Cursor cursor = mDatabase.rawQuery("SELECT * FROM timestamprecord",null);
+                     if ( cursor.moveToNext() )
+                     {
+                         countvalue = (int) cursor.getInt(1);
+                     }
+                     cursor.close();
+                 }
+                 long boottimestamp = java.lang.System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime();
+                 long timemills = boottimestamp + (event.timestamp / 1000000L);
+                 mDatabase.execSQL ("DELETE FROM timestamprecord");
+                 countvalue++;
+                 mDatabase.execSQL ("INSERT INTO timestamprecord VALUES("+timemills+","+countvalue+");");
+                 String op = String.valueOf((int) countvalue +"/" + String.valueOf((int)target));
+                 count_tv.setText (op);
+                 System.out.println ("Step incremented count = "+countvalue);
+             }
+         }
     }
 
     public void showAboutDialog () {
@@ -273,7 +345,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //ExitDialogFragment exitDialogFragment = ExitDialogFragment.newInstance ("Confirm");
         exitDialogFragment.show (fm,"title");
     }
-
+    public void showIntroDialog ()
+    {
+        introDialogFragment.show (getSupportFragmentManager(),"title");
+    }
     public void createDatabase ()
     {
         mDatabase.execSQL (
@@ -295,7 +370,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onBackPressed()
     {
         mDatabase.execSQL("DELETE FROM lastrecord;") ;
-        mDatabase.execSQL("INSERT INTO lastrecord values ("+(int)dbvalue+");");
+        mDatabase.execSQL("INSERT INTO lastrecord values ("+(int)countvalue+");");
         System.out.println ("Saving last value");
         showExitDialog ();
     }
